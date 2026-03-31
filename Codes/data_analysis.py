@@ -10,3 +10,13 @@ cur.execute("""
     SELECT DATE || ' ' || TIME AS datetime, temp, hum, soil_moisture, par
         FROM MOCKDATA
 """)
+
+cur.execute("""
+    ALTER TABLE readings ADD COLUMN temp001 INT;
+""")
+
+cur.execute("""
+    UPDATE readings 
+    SET temp001 = 1
+    WHERE temp >= 31.5
+""")
