@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Greenhouse Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            background: #ccc;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: #ddd;
+            padding: 15px;
+            flex: 1;
+            margin: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .graph {
+            background: #ccc;
+            padding: 20px;
+            height: 300px;
+            margin: 20px 0;
+        }
+
+        .bottom {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .box {
+            background: #ccc;
+            padding: 20px;
+            width: 48%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Greenhouse Dashboard</h1>
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="card">Temperature: <span id="temp">--</span> °C</div>
+        <div class="card">Humidity: <span id="humidity">--</span> %</div>
+        <div class="card">Soil Moisture: <span id="soil">--</span> %</div>
+        <div class="card">Light: <span id="light">--</span></div>
+    </div>
+
+    <!-- Graph -->
+    <div class="graph">
+        <canvas id="chart"></canvas>
+    </div>
+
+    <!-- Bottom Section -->
+    <div class="bottom">
+        <div class="box">
+            <h3>Alert!</h3>
+            <p id="alert">No alerts</p>
+        </div>
+
+        <div class="box">
+            <h3>Historical Data</h3>
+            <p>Coming soon...</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Example dummy data (replace with API later)
+    const data = [
+        { timestamp: "10:00", temperature: 25 },
+        { timestamp: "11:00", temperature: 27 },
+        { timestamp: "12:00", temperature: 29 }
+    ];
+
+    // Update stats
+    document.getElementById("temp").innerText = data[data.length-1].temperature;
+    document.getElementById("humidity").innerText = 60;
+    document.getElementById("soil").innerText = 40;
+    document.getElementById("light").innerText = 300;
+
+    // Simple alert
+    if (data[data.length-1].temperature > 28) {
+        document.getElementById("alert").innerText = "⚠ High temperature!";
+    }
+
+    // Chart
+    const ctx = document.getElementById('chart');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(d => d.timestamp),
+            datasets: [{
+                label: 'Temperature',
+                data: data.map(d => d.temperature)
+            }]
+        }
+    });
+</script>
+
+</body>
+</html>
