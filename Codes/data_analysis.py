@@ -11,12 +11,40 @@ cur.execute("""
         FROM MOCKDATA
 """)
 
-cur.execute("""
-    ALTER TABLE readings ADD COLUMN temp001 INT;
-""")
+cur.execute("DROP TABLE IF EXISTS main.readings_with_status;")
 
 cur.execute("""
-    UPDATE readings 
-    SET temp001 = 1
-    WHERE temp >= 31.5
+    CREATE VIEW readings_with_status AS
+SELECT
+    r.*,
+
+    -- TEMPERATURE
+    CASE
+        WHEN r.temp < 12.9 THEN 'below'
+        WHEN r.temp > 31.5 THEN 'above'
+        ELSE 'within'
+    END AS temp_status,
+
+    -- HUMIDITY
+    CASE
+        WHEN r.hum < 9.1 THEN 'below'
+        WHEN r.hum > 83.2 THEN 'above'
+        ELSE 'within'
+    END AS hum_status,
+
+    -- SOIL MOISTURE
+    CASE
+        WHEN r.soil_moisture < 16.5 THEN 'below'
+        WHEN r.soil_moisture > 20.5 THEN 'above'
+        ELSE 'within'
+    END AS soil_status,
+
+    -- PAR
+    CASE
+        WHEN r.par < 0.0 THEN 'below'
+        WHEN r.par > 1926.0 THEN 'above'
+        ELSE 'within'
+    END AS par_status
+
+FROM readings r;
 """)
