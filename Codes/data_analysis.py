@@ -11,7 +11,7 @@ cur.execute("""
         FROM MOCKDATA
 """)
 
-cur.execute("DROP TABLE IF EXISTS main.readings_with_status;")
+cur.execute("DROP VIEW IF EXISTS readings_with_status;")
 
 cur.execute("""
     CREATE VIEW readings_with_status AS
