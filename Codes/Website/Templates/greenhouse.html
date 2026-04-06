@@ -23,6 +23,15 @@
             margin: auto;
         }
 
+        .card {
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.card:hover {
+    background: #bbb;
+}
+
         .stats {
             display: flex;
             justify-content: space-between;
@@ -55,6 +64,10 @@
             padding: 20px;
             width: 48%;
         }
+
+        .box:hover {
+    background: #bbb;
+}
     </style>
 </head>
 <body>
@@ -65,11 +78,13 @@
 
     <!-- Stats -->
     <div class="stats">
-        <div class="card">Temperature: <span id="temp">--</span> °C</div>
-        <div class="card">Humidity: <span id="humidity">--</span> %</div>
-        <div class="card">Soil Moisture: <span id="soil">--</span> %</div>
-        <div class="card">PAR: <span id="light">--</span></div>
-    </div>
+    <div class="card" id="tempCard">Temperature: <span id="temp">--</span> °C</div>
+    <div class="card" id="humCard">Humidity: <span id="humidity">--</span> %</div>
+    <div class="card" id="soilCard">Soil Moisture: <span id="soil">--</span> %</div>
+    <div class="card" id="lightCard">Light: <span id="light">--</span> µmol/m²/s</div>
+</div>
+
+<p>Last Updated: <span id="timestamp">--</span></p>
 
     <!-- Graph -->
     <div class="graph">
@@ -85,43 +100,187 @@
 
         <div class="box">
             <h3>Historical Data</h3>
-            <p>Coming soon...</p>
+            <p id="historical">
+                View Table
+                
+            </p>
         </div>
+
+<script>
+document.getElementById('historical').addEventListener('click', () => {
+  window.location.href = '/api/historical';
+});
+</script>
     </div>
 
 </div>
 
 <script>
-    // Example dummy data (replace with API later)
-    const data = [
-        { timestamp: "10:00", temperature: 25 },
-        { timestamp: "11:00", temperature: 27 },
-        { timestamp: "12:00", temperature: 29 }
+let chart;      // global chart
+let dataset;    // global data
+
+fetch("/api/data")
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.length === 0) return;
+
+    dataset = data;
+
+    const latest = data[0];
+
+    // Update tiles
+    document.getElementById("temp").innerText = latest.temp;
+    document.getElementById("humidity").innerText = latest.hum;
+    document.getElementById("soil").innerText = latest.soil_moisture;
+    document.getElementById("light").innerText = latest.par;
+
+    document.getElementById("timestamp").innerText = latest.datetime;
+    
+    //buildTable().then(el => {
+        //const container = document.getElementById('historical');
+        //container.innerHTML = '';
+        //container.appendChild(el);
+    //});
+
+    const alerts = [];
+
+    const rules = [
+    { key: "temp_status", above: "Temperature too high", below: "Temperature too low" },
+    { key: "hum_status",  above: "Humidity too high",    below: "Humidity too low" },
+    { key: "soil_status", above: "Soil too wet",         below: "Soil too dry" },
+    { key: "par_status",  above: "PAR too high",         below: "PAR too low" }
     ];
 
-    // Update stats
-    document.getElementById("temp").innerText = data[data.length-1].temperature;
-    document.getElementById("humidity").innerText = 60;
-    document.getElementById("soil").innerText = 40;
-    document.getElementById("light").innerText = 300;
+    rules.forEach(({ key, above, below }) => {
+    if (latest[key] === "above") alerts.push(above);
+    if (latest[key] === "below") alerts.push(below);
+    });
 
-    // Simple alert
-    if (data[data.length-1].temperature > 28) {
-        document.getElementById("alert").innerText = "⚠ High temperature!";
+    const alertBox = document.getElementById("alert");
+
+    if (alerts.length > 0) {
+    alertBox.innerText = alerts.join(" | ");
+    alertBox.style.color = "red";
+    } else {
+    alertBox.innerText = "No alerts";
+    alertBox.style.color = "green";
     }
 
-    // Chart
-    const ctx = document.getElementById('chart');
-    new Chart(ctx, {
-        type: 'line',
+    // Create initial chart (temperature default)
+    createChart("temp", "Temperature");
+});
+
+async function buildTable() {
+  try {
+    const response = await fetch('/api/data');
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    const table = document.createElement('table');
+    table.border = "1";
+
+    // HEADER
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+
+    const headers = [
+      'Datetime',
+      'Temperature',
+      'Humidity',
+      'Soil Moisture',
+      'PAR'
+    ];
+
+    headers.forEach(text => {
+      const th = document.createElement('th');
+      th.textContent = text;
+      headerRow.appendChild(th);
+    });
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // BODY
+    const tbody = document.createElement('tbody');
+
+    data.forEach(item => {
+      const row = document.createElement('tr');
+
+      const values = [
+        item.datetime,
+        item.hum,
+        item.par,
+        item.soil_moisture,
+        item.temp
+      ];
+
+      values.forEach(val => {
+        const td = document.createElement('td');
+        td.textContent = val;
+        row.appendChild(td);
+      });
+
+      tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+
+    return table;
+
+  } catch (error) {
+    console.error('Failed to load data:', error);
+    const errorMsg = document.createElement('div');
+    errorMsg.textContent = 'Failed to load data.';
+    return errorMsg;
+  }
+}
+
+function createChart(field, label) {
+
+    const labels = dataset.map(d => d.datetime).reverse();
+    const values = dataset.map(d => d[field]).reverse();
+
+    const ctx = document.getElementById("chart");
+
+    // Destroy old chart if exists
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: "line",
         data: {
-            labels: data.map(d => d.timestamp),
+            labels: labels,
             datasets: [{
-                label: 'Temperature',
-                data: data.map(d => d.temperature)
+                label: label,
+                data: values
             }]
         }
     });
+}
+
+// Click events
+document.getElementById("tempCard").onclick = () => {
+    createChart("temp", "Temperature");
+};
+
+document.getElementById("humCard").onclick = () => {
+    createChart("hum", "Humidity");
+};
+
+document.getElementById("soilCard").onclick = () => {
+    createChart("soil_moisture", "Soil Moisture");
+};
+
+document.getElementById("lightCard").onclick = () => {
+    createChart("par", "Light");
+};
+
+
+
 </script>
 
 </body>

@@ -14,13 +14,19 @@ print("Table dropped (if it existed).")
 print("Creating table 'readings' from MOCKDATA...")
 cur.execute("""
     CREATE TABLE readings AS
-    SELECT DATE || ' ' || TIME AS datetime, temp, hum, soil_moisture, par
+    SELECT datetime(
+        DATE || ' ' || 
+        printf('%02d:%s', 
+        CAST(substr(TIME, 1, instr(TIME, ':') - 1) AS INTEGER),
+        substr(TIME, instr(TIME, ':') + 1)
+    )
+    ) AS datetime, temp, hum, soil_moisture, par
     FROM MOCKDATA
 """)
 print("Table 'readings' created.")
 
 # --- ROW COUNT (TABLE) ---
-cur.execute("SELECT COUNT(*) FROM readings;")
+cur.execute("SELECT COUNT(*) FROM readings ORDER BY datetime ASC;")
 table_count = cur.fetchone()[0]
 
 if table_count == 0:
@@ -73,7 +79,7 @@ cur.execute("""
 print("View 'readings_with_status' created.")
 
 # --- ROW COUNT (VIEW) ---
-cur.execute("SELECT COUNT(*) FROM readings_with_status;")
+cur.execute("SELECT COUNT(*) FROM readings_with_status ORDER BY datetime ASC;")
 view_count = cur.fetchone()[0]
 
 if view_count == 0:

@@ -1,0 +1,92 @@
+<!-- table.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data Table</title>
+  <style>
+    button {
+      margin-bottom: 20px;
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<button onclick="goBack()">⬅ Back</button>
+
+
+<h2>Sensor Data</h2>
+<div id="tableContainer">Loading...</div>
+
+<script>
+
+function goBack() {
+  // Goes back to previous page
+  window.history.back();
+
+  // Alternative (if you want fixed page):
+  // window.location.href = 'index.html';
+}
+async function buildTable() {
+  try {
+    const response = await fetch('/api/data');
+    const data = await response.json();
+
+    const table = document.createElement('table');
+    table.border = "1";
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+
+    ['Datetime', 'Temperature',  'Humidity', 'Soil Moisture', 'PAR']
+      .forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
+      });
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+
+    data.forEach(item => {
+      const row = document.createElement('tr');
+
+      [
+        item.datetime,
+        item.temp,
+        item.hum,
+        item.soil_moisture,
+        item.par
+      ].forEach(val => {
+        const td = document.createElement('td');
+        td.textContent = val;
+        row.appendChild(td);
+      });
+
+      tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+
+    return table;
+
+  } catch (err) {
+    const div = document.createElement('div');
+    div.textContent = 'Error loading data';
+    return div;
+  }
+}
+
+// render table
+buildTable().then(el => {
+  const container = document.getElementById('tableContainer');
+  container.innerHTML = '';
+  container.appendChild(el);
+});
+</script>
+
+</body>
+</html>
