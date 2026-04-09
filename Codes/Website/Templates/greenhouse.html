@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Greenhouse Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -34,14 +35,14 @@
 
         .stats {
             display: flex;
-            justify-content: space-between;
-            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .card {
             background: #ddd;
             padding: 15px;
-            flex: 1;
+            flex: 1 1 40px;
             margin: 5px;
             text-align: center;
             font-weight: bold;
@@ -50,7 +51,7 @@
         .graph {
             background: #ccc;
             padding: 20px;
-            height: 300px;
+            height: 500px;
             margin: 20px 0;
         }
 
@@ -67,6 +68,35 @@
 
         .box:hover {
     background: #bbb;
+}
+@media (max-width: 768px) {
+    
+    .stats {
+        flex-direction: column;
+    }
+
+    .bottom {
+        flex-direction: column;
+    }
+
+    .box {
+        width: 90%;
+        margin-bottom: 10px;
+    }
+
+    .container {
+        width: 90%;
+        height: auto;
+        margin-bottom: 10px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+    .graph {
+    width: 90%;
+    height: auto;
+    }   
 }
     </style>
 </head>
@@ -120,8 +150,8 @@ let chart;      // global chart
 let dataset;    // global data
 
 fetch("/api/data")
-  .then(res => res.json())
-  .then(data => {
+    .then(res => res.json())
+    .then(data => {
 
     if (data.length === 0) return;
 
@@ -136,6 +166,7 @@ fetch("/api/data")
     document.getElementById("light").innerText = latest.par;
 
     document.getElementById("timestamp").innerText = latest.datetime;
+    
     
     //buildTable().then(el => {
         //const container = document.getElementById('historical');
@@ -169,8 +200,8 @@ fetch("/api/data")
 
     // Create initial chart (temperature default)
     createChart("temp", "Temperature");
-});
 
+});
 async function buildTable() {
   try {
     const response = await fetch('/api/data');
@@ -241,47 +272,188 @@ async function buildTable() {
 }
 
 function createChart(field, label) {
+    console.log("Clicked:", field);
 
     const labels = dataset.map(d => d.datetime).reverse();
-    const values = dataset.map(d => d[field]).reverse();
+    const tempData = dataset.map(d => d.temp).reverse();
+    const humData = dataset.map(d => d.hum).reverse();
+    const soilData = dataset.map(d => d.soil_moisture).reverse();
+    const lightData = dataset.map(d => d.par).reverse();
 
     const ctx = document.getElementById("chart");
+    //const maxTempData = 30;
+    //const minTempData = 15;
 
     // Destroy old chart if exists
     if (chart) chart.destroy();
 
     chart = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: labels,
-            datasets: [{
-                label: label,
-                data: values
-            }]
+    type: "line",
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: "Temperature",
+                data: tempData,
+                borderColor: "red",
+                backgroundColor: "red",
+                fill: false
+            },
+            {
+                label: "Humidity",
+                data: humData,
+                borderColor: "blue",
+                backgroundColor: "blue",
+                fill: false
+            },
+            {
+                label: "Soil Moisture",
+                data: soilData,
+                borderColor: "green",
+                backgroundColor: "green",
+                fill: false
+            },
+            {
+                label: "Light",
+                data: lightData,
+                borderColor: "orange",
+                backgroundColor: "orange",
+                fill: false
+            }
+        ]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: "darkgreen"
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: "black"
+                }
+            },
+            y: {
+                ticks: {
+                    color: "darkblue"
+                }
+            }
         }
+    }
     });
 }
 
-// Click events
-document.getElementById("tempCard").onclick = () => {
-    createChart("temp", "Temperature");
-};
 
-document.getElementById("humCard").onclick = () => {
-    createChart("hum", "Humidity");
-};
+document.addEventListener("DOMContentLoaded", function () {
 
-document.getElementById("soilCard").onclick = () => {
-    createChart("soil_moisture", "Soil Moisture");
-};
+    document.getElementById("tempCard").onclick = () => {
+        createChart("temp", "Temperature", "red");
+    };
 
-document.getElementById("lightCard").onclick = () => {
-    createChart("par", "Light");
-};
+    document.getElementById("humCard").onclick = () => {
+        createChart("hum", "Humidity", "blue");
+    };
 
+    document.getElementById("soilCard").onclick = () => {
+        createChart("soil_moisture", "Soil Moisture", "brown");
+    };
 
+    document.getElementById("lightCard").onclick = () => {
+        createChart("par", "Light", "orange");
+    };
 
+});
+  
+function createChart(column, label, color) {
+
+    fetch("/api/data")
+        .then(res => res.json())
+        .then(data => {
+
+            const labels = dataset.map(d => d.datetime).reverse();
+            const values = dataset.map(d => d[column]).reverse();
+
+            const ctx = document.getElementById("chart");
+            
+            let max, min;
+
+            if (column === "temp") {
+                max = 31.5;
+                min = 12.9;
+            } else if (column === "hum") {
+                max = 83.2;
+                min = 9.1;
+            } else if (column === "soil_moisture") {
+                max = 20.5;
+                min = 16.5;
+            } else if (column === "par") {
+                max = 1400.0;
+                min = 250.0;
+            }
+            // Destroy old chart before creating new one
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [
+                    {    
+                        label: label,
+                        data: values,
+                        borderColor: color,
+                        tension: 0.4
+                    },
+                    {
+                        label: "Max Threshold",
+                        data: labels.map(() => max),
+                        borderColor: "DarkRed",
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    },
+                    {
+                        label: "Min Threshold",
+                        data: labels.map(() => min),
+                        borderColor: "DarkGreen",
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }
+                ]
+                },
+                options: {
+                    responsive: true,
+
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: "blue"
+                            },
+                            grid: {
+                                color: "#cccccc" // X-axis grid lines
+                            }
+                            },
+                        y: {
+                            ticks: {
+                                color: "darkgreen"  // Y-axis numbers
+                            },
+                            grid: {
+                                color: "#cccccc" // Y-axis grid lines
+                            }
+                            }
+                        }
+                    }
+                }
+            );
+        });
+}
 </script>
-
+<script src="/static/script.js"></script>
 </body>
 </html>

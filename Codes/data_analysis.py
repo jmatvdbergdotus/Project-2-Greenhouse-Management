@@ -69,8 +69,8 @@ cur.execute("""
 
         -- PAR
         CASE
-            WHEN r.par < 0.0 THEN 'below'
-            WHEN r.par > 1926.0 THEN 'above'
+            WHEN r.par < 250.0 THEN 'below'
+            WHEN r.par > 1400.0 THEN 'above'
             ELSE 'within'
         END AS par_status
 
